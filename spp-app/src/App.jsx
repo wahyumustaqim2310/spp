@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, CreditCard, Receipt, Settings, Plus, Search, Trash2, Edit2, 
   CheckCircle, AlertCircle, Building, Wallet, ArrowRightLeft, UserCheck, 
-  FileText, Shield, Award, Calendar, ChevronRight, X
+  FileText, Shield, Award, Calendar, ChevronRight, X, Printer
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { 
@@ -50,6 +50,10 @@ export default function PesantrenApp() {
 
   const [showDaftarUlangModal, setShowDaftarUlangModal] = useState(false);
   const [editingDaftarUlang, setEditingDaftarUlang] = useState(null);
+
+  // Invoice / Nota Modal State
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [activeInvoice, setActiveInvoice] = useState(null);
 
   // Form States Santri
   const [santriForm, setSantriForm] = useState({
@@ -231,6 +235,24 @@ export default function PesantrenApp() {
     }
   };
 
+  // Fungsi Cetak Nota
+  const handleOpenInvoice = (item, type) => {
+    const santri = santriList.find(s => s.id === item.santriId);
+    setActiveInvoice({
+      ...item,
+      jenisNota: type, // 'Syahriah Bulanan' atau 'Daftar Ulang'
+      santriNama: santri ? santri.nama : 'Santri Dihapus',
+      santriNis: santri ? santri.nis : '-',
+      santriJenjang: santri ? `${santri.jenjang} - Kelas ${santri.kelas}` : '-',
+      santriAlamat: santri ? santri.alamat : '-'
+    });
+    setShowInvoiceModal(true);
+  };
+
+  const triggerPrint = () => {
+    window.print();
+  };
+
   // Hitung Belum Bayar Bulan Ini (September 2026)
   const currentMonthStr = 'September 2026';
   const santriSudahBayarIds = syahriahList
@@ -257,7 +279,7 @@ export default function PesantrenApp() {
       )}
 
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-emerald-900 text-white flex flex-col justify-between shadow-xl">
+      <aside className="w-full md:w-64 bg-emerald-900 text-white flex flex-col justify-between shadow-xl print:hidden">
         <div>
           <div className="p-6 border-b border-emerald-800 flex items-center gap-3">
             <div className="bg-emerald-700 p-2.5 rounded-xl text-emerald-100 shadow-inner">
@@ -306,7 +328,7 @@ export default function PesantrenApp() {
       <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         
         {/* Top Header */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs print:hidden">
           <div>
             <h2 className="text-xl font-bold text-slate-800 capitalize">
               {activeTab === 'daftarUlang' ? 'Pembayaran Daftar Ulang' : activeTab === 'syahriah' ? 'Syahriah Bulanan' : activeTab}
@@ -390,9 +412,18 @@ export default function PesantrenApp() {
                               <p className="font-semibold text-sm text-slate-800">{santri ? santri.nama : 'Santri Dihapus'}</p>
                               <p className="text-xs text-slate-500">{item.bulan} &bull; <span className="text-emerald-600 font-medium">{item.metode} {item.metode === 'Transfer' ? `(${item.tujuanTransfer})` : ''}</span></p>
                             </div>
-                            <div className="text-right">
-                              <p className="font-bold text-emerald-700 text-sm">Rp {Number(item.nominal).toLocaleString('id-ID')}</p>
-                              <p className="text-[10px] text-slate-400">{item.tanggal}</p>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <p className="font-bold text-emerald-700 text-sm">Rp {Number(item.nominal).toLocaleString('id-ID')}</p>
+                                <p className="text-[10px] text-slate-400">{item.tanggal}</p>
+                              </div>
+                              <button 
+                                onClick={() => handleOpenInvoice(item, 'Syahriah Bulanan')}
+                                className="p-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg transition"
+                                title="Cetak Nota"
+                              >
+                                <Printer size={16} />
+                              </button>
                             </div>
                           </div>
                         );
@@ -553,7 +584,7 @@ export default function PesantrenApp() {
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="font-bold text-base text-slate-800">Riwayat Pembayaran Syahriah Bulanan</h3>
-                  <p className="text-xs text-slate-500">Catat dan pantau syahriah bulanan seluruh santri</p>
+                  <p className="text-xs text-slate-500">Catat, pantau, dan cetak nota syahriah bulanan seluruh santri</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -587,7 +618,7 @@ export default function PesantrenApp() {
                       <th className="py-3 px-4">Nominal</th>
                       <th className="py-3 px-4">Metode</th>
                       <th className="py-3 px-4">Catatan</th>
-                      <th className="py-3 px-4 text-center">Aksi</th>
+                      <th className="py-3 px-4 text-center">Aksi & Nota</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
@@ -617,7 +648,14 @@ export default function PesantrenApp() {
                             </td>
                             <td className="py-3.5 px-4 text-slate-600 text-xs italic">{item.catatan}</td>
                             <td className="py-3.5 px-4 text-center">
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button 
+                                  onClick={() => handleOpenInvoice(item, 'Syahriah Bulanan')}
+                                  className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium flex items-center gap-1 transition"
+                                  title="Cetak Nota"
+                                >
+                                  <Printer size={14} /> Nota
+                                </button>
                                 <button 
                                   onClick={() => {
                                     setEditingSyahriah(item);
@@ -625,12 +663,14 @@ export default function PesantrenApp() {
                                     setShowSyahriahModal(true);
                                   }}
                                   className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                  title="Edit"
                                 >
                                   <Edit2 size={16} />
                                 </button>
                                 <button 
                                   onClick={() => handleDeleteSyahriah(item.id)}
                                   className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                  title="Hapus"
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -687,7 +727,7 @@ export default function PesantrenApp() {
                       <th className="py-3 px-4">Nominal</th>
                       <th className="py-3 px-4">Metode</th>
                       <th className="py-3 px-4">Catatan</th>
-                      <th className="py-3 px-4 text-center">Aksi</th>
+                      <th className="py-3 px-4 text-center">Aksi & Nota</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
@@ -720,7 +760,14 @@ export default function PesantrenApp() {
                             </td>
                             <td className="py-3.5 px-4 text-slate-600 text-xs italic">{item.catatan}</td>
                             <td className="py-3.5 px-4 text-center">
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button 
+                                  onClick={() => handleOpenInvoice(item, 'Daftar Ulang')}
+                                  className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium flex items-center gap-1 transition"
+                                  title="Cetak Nota"
+                                >
+                                  <Printer size={14} /> Nota
+                                </button>
                                 <button 
                                   onClick={() => {
                                     setEditingDaftarUlang(item);
@@ -817,6 +864,105 @@ export default function PesantrenApp() {
 
         </div>
       </main>
+
+      {/* MODAL INVOICE / NOTA PEMBAYARAN */}
+      {showInvoiceModal && activeInvoice && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 print:shadow-none print:m-0 print:w-full">
+            
+            {/* Header Nota */}
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-emerald-900 text-white print:bg-emerald-900">
+              <div className="flex items-center gap-2">
+                <Building size={20} />
+                <h3 className="font-bold text-base">{settings.namaPesantren}</h3>
+              </div>
+              <button onClick={() => setShowInvoiceModal(false)} className="text-emerald-200 hover:text-white print:hidden">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Isi Nota */}
+            <div className="p-6 space-y-5 text-sm">
+              <div className="text-center border-b border-dashed border-slate-200 pb-4">
+                <h4 className="font-bold text-base uppercase text-slate-800 tracking-wider">KWITANSI PEMBAYARAN</h4>
+                <p className="text-xs text-slate-500 mt-0.5">Nota Resmi Administrasi Pesantren</p>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">ID Transaksi</span>
+                  <span className="font-mono font-medium text-slate-700">INV-{activeInvoice.id.substring(0, 8).toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Tanggal</span>
+                  <span className="font-medium text-slate-700">{activeInvoice.tanggal}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Jenis Pembayaran</span>
+                  <span className="font-semibold text-emerald-700">{activeInvoice.jenisNota}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Metode</span>
+                  <span className="font-medium text-slate-700">{activeInvoice.metode} {activeInvoice.metode === 'Transfer' ? `(${activeInvoice.tujuanTransfer})` : ''}</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Nama Santri</span>
+                  <span className="font-bold text-slate-800">{activeInvoice.santriNama}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Nomor Induk (NIS)</span>
+                  <span className="font-mono font-medium text-slate-700">{activeInvoice.santriNis}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Jenjang / Kelas</span>
+                  <span className="font-medium text-slate-700">{activeInvoice.santriJenjang}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-slate-200 pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500 font-medium">Keterangan / Bulan</span>
+                  <span className="text-xs font-semibold text-slate-800">{activeInvoice.bulan || activeInvoice.tahunAjaran}</span>
+                </div>
+                <div className="flex justify-between items-center mt-3 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                  <span className="font-bold text-slate-800 text-xs">TOTAL DIBAYAR</span>
+                  <span className="font-bold text-emerald-700 text-base">Rp {Number(activeInvoice.nominal).toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-between items-end text-xs text-slate-600">
+                <div>
+                  <p className="italic text-[10px] text-slate-400">Catatan: {activeInvoice.catatan || '-'}</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-8">Penerima,</p>
+                  <p className="font-bold text-slate-800 underline">Pengurus Pesantren</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tombol Aksi Modal */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 print:hidden">
+              <button 
+                onClick={() => setShowInvoiceModal(false)}
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-100 transition"
+              >
+                Tutup
+              </button>
+              <button 
+                onClick={triggerPrint}
+                className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-medium hover:bg-emerald-700 transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+              >
+                <Printer size={15} /> Cetak Nota / PDF
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* MODAL FORM TAMBAH / EDIT SANTRI */}
       {showSantriModal && (
