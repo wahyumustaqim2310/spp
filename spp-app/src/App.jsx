@@ -27,13 +27,13 @@ export default function PesantrenApp() {
   
   // State Data Utama
   const [santriList, setSantriList] = useState([]);
-  const [iuranList, setIuranList] = useState([]);
+  const [syahriahList, setSyahriahList] = useState([]);
   const [daftarUlangList, setDaftarUlangList] = useState([]);
   
   // State Pengaturan
   const [settings, setSettings] = useState({
     namaPesantren: 'Pondok Pesantren Hidayah',
-    nominalIuranDefault: 150000,
+    nominalSyahriahDefault: 150000,
     nominalDaftarUlangSmp: 500000,
     nominalDaftarUlangSma: 750000,
   });
@@ -45,8 +45,8 @@ export default function PesantrenApp() {
   const [showSantriModal, setShowSantriModal] = useState(false);
   const [editingSantri, setEditingSantri] = useState(null);
 
-  const [showIuranModal, setShowIuranModal] = useState(false);
-  const [editingIuran, setEditingIuran] = useState(null);
+  const [showSyahriahModal, setShowSyahriahModal] = useState(false);
+  const [editingSyahriah, setEditingSyahriah] = useState(null);
 
   const [showDaftarUlangModal, setShowDaftarUlangModal] = useState(false);
   const [editingDaftarUlang, setEditingDaftarUlang] = useState(null);
@@ -62,12 +62,12 @@ export default function PesantrenApp() {
     noHp: ''
   });
 
-  // Form States Iuran
-  const [iuranForm, setIuranForm] = useState({
+  // Form States Syahriah Bulanan
+  const [syahriahForm, setSyahriahForm] = useState({
     santriId: '',
     tanggal: new Date().toISOString().split('T')[0],
-    bulan: 'Januari 2026',
-    nominal: settings.nominalIuranDefault,
+    bulan: 'September 2026',
+    nominal: settings.nominalSyahriahDefault,
     metode: 'Tunai',
     tujuanTransfer: 'Abi',
     catatan: 'Lunas'
@@ -93,7 +93,6 @@ export default function PesantrenApp() {
     'Juli 2026', 'Agustus 2026', 'September 2026', 'Oktober 2026', 'November 2026', 'Desember 2026'
   ];
 
-  // Fetch Data dari Firestore (Mocked/Live Local fallback if offline)
   useEffect(() => {
     fetchData();
   }, []);
@@ -106,33 +105,29 @@ export default function PesantrenApp() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Simulasikan atau ambil dari firestore
       const sSnap = await getDocs(collection(db, 'santri'));
       const sData = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      const iSnap = await getDocs(collection(db, 'iuran'));
-      const iData = iSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const sySnap = await getDocs(collection(db, 'syahriah'));
+      const syData = sySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const duSnap = await getDocs(collection(db, 'daftarUlang'));
       const duData = duSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Data dummy awal jika kosong agar langsung hidup
       if (sData.length === 0) {
-        const defaultSantri = [
+        setSantriList([
           { id: '1', nis: '1001', nama: 'Ahmad Fauzi', jenisKelamin: 'Putra', jenjang: 'SMP', kelas: '7', alamat: 'Demak', noHp: '08123456789' },
           { id: '2', nis: '1002', nama: 'Siti Aminah', jenisKelamin: 'Putri', jenjang: 'SMA', kelas: '10', alamat: 'Kudus', noHp: '08567890123' },
-        ];
-        setSantriList(defaultSantri);
+        ]);
       } else {
         setSantriList(sData);
       }
 
-      if (iData.length > 0) setIuranList(iData);
+      if (syData.length > 0) setSyahriahList(syData);
       if (duData.length > 0) setDaftarUlangList(duData);
 
     } catch (e) {
       console.error(e);
-      // Fallback local state jika offline
       if (santriList.length === 0) {
         setSantriList([
           { id: '1', nis: '1001', nama: 'Ahmad Fauzi', jenisKelamin: 'Putra', jenjang: 'SMP', kelas: '7', alamat: 'Demak', noHp: '08123456789' },
@@ -166,7 +161,6 @@ export default function PesantrenApp() {
     }
   };
 
-  // Handler Hapus Santri
   const handleDeleteSantri = async (id) => {
     if (confirm('Yakin ingin menghapus data santri ini?')) {
       try {
@@ -179,32 +173,32 @@ export default function PesantrenApp() {
     }
   };
 
-  // Handler Simpan Iuran
-  const handleSaveIuran = async (e) => {
+  // Handler Simpan Syahriah
+  const handleSaveSyahriah = async (e) => {
     e.preventDefault();
     try {
-      if (editingIuran) {
-        const ref = doc(db, 'iuran', editingIuran.id);
-        await updateDoc(ref, iuranForm);
-        setIuranList(iuranList.map(i => i.id === editingIuran.id ? { ...i, ...iuranForm } : i));
-        showNotificationMsg('Data pembayaran iuran diperbarui!');
+      if (editingSyahriah) {
+        const ref = doc(db, 'syahriah', editingSyahriah.id);
+        await updateDoc(ref, syahriahForm);
+        setSyahriahList(syahriahList.map(i => i.id === editingSyahriah.id ? { ...i, ...syahriahForm } : i));
+        showNotificationMsg('Data pembayaran syahriah diperbarui!');
       } else {
-        const docRef = await addDoc(collection(db, 'iuran'), iuranForm);
-        setIuranList([...iuranList, { id: docRef.id, ...iuranForm }]);
-        showNotificationMsg('Pembayaran iuran berhasil dicatat!');
+        const docRef = await addDoc(collection(db, 'syahriah'), syahriahForm);
+        setSyahriahList([...syahriahList, { id: docRef.id, ...syahriahForm }]);
+        showNotificationMsg('Pembayaran syahriah berhasil dicatat!');
       }
-      setShowIuranModal(false);
-      setEditingIuran(null);
+      setShowSyahriahModal(false);
+      setEditingSyahriah(null);
     } catch (err) {
-      showNotificationMsg('Gagal menyimpan iuran', 'error');
+      showNotificationMsg('Gagal menyimpan syahriah', 'error');
     }
   };
 
-  const handleDeleteIuran = async (id) => {
-    if (confirm('Hapus catatan iuran ini?')) {
-      await deleteDoc(doc(db, 'iuran', id));
-      setIuranList(iuranList.filter(i => i.id !== id));
-      showNotificationMsg('Catatan iuran dihapus');
+  const handleDeleteSyahriah = async (id) => {
+    if (confirm('Hapus catatan syahriah ini?')) {
+      await deleteDoc(doc(db, 'syahriah', id));
+      setSyahriahList(syahriahList.filter(i => i.id !== id));
+      showNotificationMsg('Catatan syahriah dihapus');
     }
   };
 
@@ -237,16 +231,16 @@ export default function PesantrenApp() {
     }
   };
 
-  // Hitung Belum Bayar Bulan Ini (Misal September 2026)
+  // Hitung Belum Bayar Bulan Ini (September 2026)
   const currentMonthStr = 'September 2026';
-  const santriSudahBayarIds = iuranList
+  const santriSudahBayarIds = syahriahList
     .filter(i => i.bulan === currentMonthStr)
     .map(i => i.santriId);
   
   const santriBelumBayar = santriList.filter(s => !santriSudahBayarIds.includes(s.id));
 
   // Total Keuangan
-  const totalIuran = iuranList.reduce((acc, curr) => acc + Number(curr.nominal || 0), 0);
+  const totalSyahriah = syahriahList.reduce((acc, curr) => acc + Number(curr.nominal || 0), 0);
   const totalDaftarUlang = daftarUlangList.reduce((acc, curr) => acc + Number(curr.nominal || 0), 0);
 
   return (
@@ -279,7 +273,7 @@ export default function PesantrenApp() {
             {[
               { id: 'dashboard', label: 'Dashboard', icon: Building },
               { id: 'santri', label: 'Data Santri', icon: Users },
-              { id: 'iuran', label: 'Iuran Bulanan', icon: CreditCard },
+              { id: 'syahriah', label: 'Syahriah Bulanan', icon: CreditCard },
               { id: 'daftarUlang', label: 'Daftar Ulang', icon: Award },
               { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
             ].map((item) => {
@@ -315,7 +309,7 @@ export default function PesantrenApp() {
         <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
           <div>
             <h2 className="text-xl font-bold text-slate-800 capitalize">
-              {activeTab === 'daftarUlang' ? 'Pembayaran Daftar Ulang' : activeTab}
+              {activeTab === 'daftarUlang' ? 'Pembayaran Daftar Ulang' : activeTab === 'syahriah' ? 'Syahriah Bulanan' : activeTab}
             </h2>
             <p className="text-xs text-slate-500">Kelola administrasi pesantren dengan cepat dan terstruktur</p>
           </div>
@@ -350,8 +344,8 @@ export default function PesantrenApp() {
                     <Wallet size={24} />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">Total Kas Iuran</p>
-                    <h3 className="text-xl font-bold text-slate-800">Rp {totalIuran.toLocaleString('id-ID')}</h3>
+                    <p className="text-xs text-slate-500 font-medium">Total Kas Syahriah</p>
+                    <h3 className="text-xl font-bold text-slate-800">Rp {totalSyahriah.toLocaleString('id-ID')}</h3>
                   </div>
                 </div>
 
@@ -382,13 +376,13 @@ export default function PesantrenApp() {
                 {/* Riwayat Terbaru */}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
                   <h3 className="font-bold text-base text-slate-800 mb-4 flex items-center gap-2">
-                    <CreditCard size={18} className="text-emerald-600"/> Pembayaran Iuran Terbaru
+                    <CreditCard size={18} className="text-emerald-600"/> Pembayaran Syahriah Terbaru
                   </h3>
-                  {iuranList.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-6 text-center">Belum ada data pembayaran iuran.</p>
+                  {syahriahList.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-6 text-center">Belum ada data pembayaran syahriah.</p>
                   ) : (
                     <div className="space-y-3">
-                      {iuranList.slice(-5).reverse().map((item) => {
+                      {syahriahList.slice(-5).reverse().map((item) => {
                         const santri = santriList.find(s => s.id === item.santriId);
                         return (
                           <div key={item.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -410,11 +404,11 @@ export default function PesantrenApp() {
                 {/* Santri Belum Membayar */}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
                   <h3 className="font-bold text-base text-rose-700 mb-4 flex items-center gap-2">
-                    <AlertCircle size={18} /> Belum Membayar Bulan Ini ({currentMonthStr})
+                    <AlertCircle size={18} /> Belum Membayar Syahriah ({currentMonthStr})
                   </h3>
                   {santriBelumBayar.length === 0 ? (
                     <div className="py-10 text-center bg-emerald-50 rounded-xl border border-emerald-100">
-                      <p className="text-emerald-700 font-semibold text-sm">Alhamdulillah, semua santri sudah membayar bulan ini! 🎉</p>
+                      <p className="text-emerald-700 font-semibold text-sm">Alhamdulillah, semua santri sudah membayar syahriah bulan ini! 🎉</p>
                     </div>
                   ) : (
                     <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
@@ -426,9 +420,9 @@ export default function PesantrenApp() {
                           </div>
                           <button 
                             onClick={() => {
-                              setActiveTab('iuran');
-                              setIuranForm(prev => ({ ...prev, santriId: santri.id }));
-                              setShowIuranModal(true);
+                              setActiveTab('syahriah');
+                              setSyahriahForm(prev => ({ ...prev, santriId: santri.id }));
+                              setShowSyahriahModal(true);
                             }}
                             className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition"
                           >
@@ -553,27 +547,27 @@ export default function PesantrenApp() {
             </div>
           )}
 
-          {/* IURAN BULANAN TAB */}
-          {activeTab === 'iuran' && (
+          {/* SYARIAH BULANAN TAB */}
+          {activeTab === 'syahriah' && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-bold text-base text-slate-800">Riwayat Pembayaran Iuran Bulanan</h3>
-                  <p className="text-xs text-slate-500">Catat dan pantau iuran bulanan seluruh santri</p>
+                  <h3 className="font-bold text-base text-slate-800">Riwayat Pembayaran Syahriah Bulanan</h3>
+                  <p className="text-xs text-slate-500">Catat dan pantau syahriah bulanan seluruh santri</p>
                 </div>
                 <button 
                   onClick={() => {
-                    setEditingIuran(null);
-                    setIuranForm({
+                    setEditingSyahriah(null);
+                    setSyahriahForm({
                       santriId: santriList[0]?.id || '',
                       tanggal: new Date().toISOString().split('T')[0],
                       bulan: currentMonthStr,
-                      nominal: settings.nominalIuranDefault,
+                      nominal: settings.nominalSyahriahDefault,
                       metode: 'Tunai',
                       tujuanTransfer: 'Abi',
                       catatan: 'Lunas'
                     });
-                    setShowIuranModal(true);
+                    setShowSyahriahModal(true);
                   }}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition shadow-md shadow-emerald-600/20"
                 >
@@ -581,7 +575,7 @@ export default function PesantrenApp() {
                 </button>
               </div>
 
-              {/* Tabel Iuran */}
+              {/* Tabel Syahriah */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -597,12 +591,12 @@ export default function PesantrenApp() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
-                    {iuranList.length === 0 ? (
+                    {syahriahList.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className="text-center py-8 text-slate-400">Belum ada data pembayaran iuran.</td>
+                        <td colSpan="8" className="text-center py-8 text-slate-400">Belum ada data pembayaran syahriah.</td>
                       </tr>
                     ) : (
-                      iuranList.map((item, idx) => {
+                      syahriahList.map((item, idx) => {
                         const santri = santriList.find(s => s.id === item.santriId);
                         return (
                           <tr key={item.id} className="hover:bg-slate-50/60 transition">
@@ -626,16 +620,16 @@ export default function PesantrenApp() {
                               <div className="flex items-center justify-center gap-2">
                                 <button 
                                   onClick={() => {
-                                    setEditingIuran(item);
-                                    setIuranForm(item);
-                                    setShowIuranModal(true);
+                                    setEditingSyahriah(item);
+                                    setSyahriahForm(item);
+                                    setShowSyahriahModal(true);
                                   }}
                                   className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                                 >
                                   <Edit2 size={16} />
                                 </button>
                                 <button 
-                                  onClick={() => handleDeleteIuran(item.id)}
+                                  onClick={() => handleDeleteSyahriah(item.id)}
                                   className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
                                 >
                                   <Trash2 size={16} />
@@ -760,7 +754,7 @@ export default function PesantrenApp() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 max-w-xl mx-auto space-y-6">
               <div>
                 <h3 className="font-bold text-lg text-slate-800">Pengaturan Pesantren</h3>
-                <p className="text-xs text-slate-500">Sesuaikan nama lembaga dan nominal standar iuran atau daftar ulang</p>
+                <p className="text-xs text-slate-500">Sesuaikan nama lembaga dan nominal standar syahriah atau daftar ulang</p>
               </div>
 
               <form onSubmit={(e) => {
@@ -779,11 +773,11 @@ export default function PesantrenApp() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nominal Standar Iuran Bulanan (Rp)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nominal Standar Syahriah Bulanan (Rp)</label>
                   <input 
                     type="number" 
-                    value={settings.nominalIuranDefault}
-                    onChange={(e) => setSettings({ ...settings, nominalIuranDefault: Number(e.target.value) })}
+                    value={settings.nominalSyahriahDefault}
+                    onChange={(e) => setSettings({ ...settings, nominalSyahriahDefault: Number(e.target.value) })}
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-emerald-600"
                     required
                   />
@@ -964,25 +958,25 @@ export default function PesantrenApp() {
         </div>
       )}
 
-      {/* MODAL FORM CATAT IURAN */}
-      {showIuranModal && (
+      {/* MODAL FORM CATAT SYARIAH */}
+      {showSyahriahModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-base text-slate-800">
-                {editingIuran ? 'Edit Pembayaran Iuran' : 'Catat Pembayaran Iuran Baru'}
+                {editingSyahriah ? 'Edit Pembayaran Syahriah' : 'Catat Pembayaran Syahriah Baru'}
               </h3>
-              <button onClick={() => setShowIuranModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowSyahriahModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             
-            <form onSubmit={handleSaveIuran} className="p-6 space-y-4">
+            <form onSubmit={handleSaveSyahriah} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Santri (Ketik Nama / NIS)</label>
                 <select 
-                  value={iuranForm.santriId}
-                  onChange={(e) => setIuranForm({ ...iuranForm, santriId: e.target.value })}
+                  value={syahriahForm.santriId}
+                  onChange={(e) => setSyahriahForm({ ...syahriahForm, santriId: e.target.value })}
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-emerald-600"
                   required
                 >
@@ -1000,8 +994,8 @@ export default function PesantrenApp() {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Tanggal Bayar</label>
                   <input 
                     type="date" 
-                    value={iuranForm.tanggal}
-                    onChange={(e) => setIuranForm({ ...iuranForm, tanggal: e.target.value })}
+                    value={syahriahForm.tanggal}
+                    onChange={(e) => setSyahriahForm({ ...syahriahForm, tanggal: e.target.value })}
                     className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-600"
                     required
                   />
@@ -1009,8 +1003,8 @@ export default function PesantrenApp() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Untuk Bulan</label>
                   <select 
-                    value={iuranForm.bulan}
-                    onChange={(e) => setIuranForm({ ...iuranForm, bulan: e.target.value })}
+                    value={syahriahForm.bulan}
+                    onChange={(e) => setSyahriahForm({ ...syahriahForm, bulan: e.target.value })}
                     className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-emerald-600"
                   >
                     {bulanOptions.map(b => (
@@ -1024,8 +1018,8 @@ export default function PesantrenApp() {
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Nominal (Rp)</label>
                 <input 
                   type="number" 
-                  value={iuranForm.nominal}
-                  onChange={(e) => setIuranForm({ ...iuranForm, nominal: Number(e.target.value) })}
+                  value={syahriahForm.nominal}
+                  onChange={(e) => setSyahriahForm({ ...syahriahForm, nominal: Number(e.target.value) })}
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-600"
                   required
                 />
@@ -1035,20 +1029,20 @@ export default function PesantrenApp() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Metode Pembayaran</label>
                   <select 
-                    value={iuranForm.metode}
-                    onChange={(e) => setIuranForm({ ...iuranForm, metode: e.target.value })}
+                    value={syahriahForm.metode}
+                    onChange={(e) => setSyahriahForm({ ...syahriahForm, metode: e.target.value })}
                     className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-emerald-600"
                   >
                     <option value="Tunai">Tunai</option>
                     <option value="Transfer">Transfer</option>
                   </select>
                 </div>
-                {iuranForm.metode === 'Transfer' && (
+                {syahriahForm.metode === 'Transfer' && (
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Transfer Ke</label>
                     <select 
-                      value={iuranForm.tujuanTransfer}
-                      onChange={(e) => setIuranForm({ ...iuranForm, tujuanTransfer: e.target.value })}
+                      value={syahriahForm.tujuanTransfer}
+                      onChange={(e) => setSyahriahForm({ ...syahriahForm, tujuanTransfer: e.target.value })}
                       className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-emerald-600"
                     >
                       <option value="Abi">Abi</option>
@@ -1061,8 +1055,8 @@ export default function PesantrenApp() {
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Catatan</label>
                 <textarea 
-                  value={iuranForm.catatan}
-                  onChange={(e) => setIuranForm({ ...iuranForm, catatan: e.target.value })}
+                  value={syahriahForm.catatan}
+                  onChange={(e) => setSyahriahForm({ ...syahriahForm, catatan: e.target.value })}
                   rows="2"
                   placeholder="Catatan tambahan pembayaran..."
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-600 resize-none"
@@ -1072,7 +1066,7 @@ export default function PesantrenApp() {
               <div className="flex justify-end gap-3 pt-3">
                 <button 
                   type="button" 
-                  onClick={() => setShowIuranModal(false)}
+                  onClick={() => setShowSyahriahModal(false)}
                   className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition"
                 >
                   Batal
